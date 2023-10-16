@@ -1,0 +1,15 @@
+# Specify the path to your XYZ file
+file_path = 'C:\\Users\\user\Desktop\PhD\cif files\FEPP_cart_coord\AYICET.xyz'
+
+# Read the file
+with open(file_path, 'r') as file:
+    file_content = file.read()
+
+# Replace commas with spaces
+file_content = file_content.replace(',', ' ')
+
+# Write the modified content back to the file
+with open(file_path, 'w') as file:
+    file.write(file_content)
+
+print("Commas replaced with spaces in the file:", file_path)
