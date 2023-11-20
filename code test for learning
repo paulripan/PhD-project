@@ -1,0 +1,110 @@
+# Import necessary libraries
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from pymatgen.core.structure import Molecule
+
+from rdkit.Chem import Draw
+from rdkit.Chem.Draw import IPythonConsole
+from rdkit.Chem import rdDetermineBonds
+IPythonConsole.ipython_3d = True
+
+import py3Dmol
+def draw_with_spheres(mol):
+    v = py3Dmol.view(width=300,height=300)
+    IPythonConsole.addMolToView(mol,v)
+    v.zoomTo()
+    v.setStyle({'sphere':{'radius':0.3},'stick':{'radius':0.2}});
+    # IF you want label:
+    label = True
+    if label:
+        conf = mol.GetConformer()
+        for atom in mol.GetAtoms():
+            pos = conf.GetAtomPosition(atom.GetIdx())
+            v.addLabel(atom.GetSymbol(), {'position': {'x': pos.x, 'y': pos.y, 'z': pos.z}, 'inFront' : True})
+    v.show()
+      
+    def draw_with_spheres_highlight_atoms(mol, highlight_atoms):
+    v = py3Dmol.view(width=300,height=300)
+    IPythonConsole.addMolToView(mol,v)
+    v.zoomTo()
+    v.setStyle({}, {'stick': {'radius': 0.2}, 'sphere': {'scale': 0.25}})
+
+    # v.setStyle({'atom':highlight_atoms}, {'sphere': {'color': 'green', 'scale': 0.4}})
+
+    v.setStyle({'serial':highlight_atoms}, {'stick': {'radius': 0.2}, 'sphere': {'color': 'green', 'scale': 0.25}})
+
+    conf = mol.GetConformer()
+    for atom in mol.GetAtoms():
+        if atom.GetIdx() in highlight_atoms:
+            pos = conf.GetAtomPosition(atom.GetIdx())
+            v.addLabel(atom.GetSymbol(), {'position': {'x': pos.x, 'y': pos.y, 'z': pos.z}, 'inFront' : True})
+    v.show()
+
+    def draw_with_spheres_highlight_atoms(mol, highlight_atoms):
+    v = py3Dmol.view(width=300,height=300)
+    IPythonConsole.addMolToView(mol,v)
+    v.zoomTo()
+    v.setStyle({}, {'stick': {'radius': 0.2}, 'sphere': {'scale': 0.25}})
+
+    # v.setStyle({'atom':highlight_atoms}, {'sphere': {'color': 'green', 'scale': 0.4}})
+
+    v.setStyle({'serial':highlight_atoms}, {'stick': {'radius': 0.2}, 'sphere': {'color': 'green', 'scale': 0.25}})
+
+    conf = mol.GetConformer()
+    for atom in mol.GetAtoms():
+        if atom.GetIdx() in highlight_atoms:
+            pos = conf.GetAtomPosition(atom.GetIdx())
+            v.addLabel(atom.GetSymbol(), {'position': {'x': pos.x, 'y': pos.y, 'z': pos.z}, 'inFront' : True})
+    v.show()
+
+expt ="metal" # "simple" #
+# 1. Simple molecules
+base_path_simple = "/home/shubodh/OneDrive/mll_projects/2022/learn_mol/data/"
+simple_files = ["acetate.xyz", "ethane.xyz", "propylbenzene.xyz"]#,"carbon_mol.xyz"]
+# all_files = ["acetate.xyz"]#, "ethane.xyz", "propylbenzene.xyz","carbon_mol.xyz"]
+
+# 2. Metal chelate molecules
+# SET FILE NAME
+base_path_metal = "/home/shubodh/OneDrive/mll_projects/2022/learn_mol/data/refined_tmQM_apr2023/individual_mols/"
+# csd = "MASFEC" #"CMASCF" #"PMACFE" #   #with As Arsenic
+metal_files = ["CPACFE.xyz" , "CPCIFE.xyz"]
+# metal_files_single = ["CPACFE.xyz"] 
+metal_file = metal_files[0]
+
+if expt == "simple":
+	base_path =base_path_simple # base_path_metal #
+	all_files =simple_files # metal_files # 
+elif expt == "metal":
+	base_path =base_path_metal
+	all_files =metal_files
+else:
+	print("Invalid experiment")
+	exit()
+
+# for metal_file in metal_files:
+print(metal_file)
+xyz_file = base_path + metal_file
+raw_mol = Chem.MolFromXYZFile(xyz_file)
+
+# Determine the connectivity
+conn_mol = Chem.Mol(raw_mol)
+rdDetermineBonds.DetermineConnectivity(conn_mol)
+print("ONGOING 1: what actually is finding original valence is determineBonds call, just connectivity here though not actual bonds.")
+conn_mol.UpdatePropertyCache(strict=False)
+print(f'Valences all: {[(atom.GetExplicitValence(), atom.GetSymbol()) for atom in conn_mol.GetAtoms()]}')
+
+# Identify the donor atoms
+fe_atom = [atom for atom in conn_mol.GetAtoms() if atom.GetSymbol() == 'Fe'][0]
+donor_atoms = [atom for atom in conn_mol.GetAtoms() if conn_mol.GetBondBetweenAtoms(fe_atom.GetIdx(), atom.GetIdx())]
+
+# Print and highlight the donor atoms
+highlight_atoms = []
+print(f'No of donor atoms: {len(donor_atoms)}')
+for atom in donor_atoms:
+    print(f'Donor atom: {atom.GetSymbol()} with index {atom.GetIdx()}')
+    highlight_atoms.append(atom.GetIdx())
+    atom.SetProp('atomNote', 'Donor atom')
+
+# Draw the molecule with highlighted donor atoms
+draw_with_spheres(conn_mol)
+draw_with_spheres_highlight_atoms(conn_mol, highlight_atoms)
